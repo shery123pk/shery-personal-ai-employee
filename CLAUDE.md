@@ -1,6 +1,58 @@
-# Claude Code Rules
+# Bronze Tier AI Employee — Sharmeen Asif
 
-This file is generated during init for the selected agent.
+> **Hackathon:** GIAIC / Panaversity Personal AI Employee Hackathon 0
+> **Owner:** Sharmeen Asif (@shery123pk)
+> **Tier:** Bronze — File-System Watcher + Obsidian Vault
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│            Claude Code (Agent)          │
+│  Skills: vault · watcher · processing   │
+└────────────┬───────────────┬────────────┘
+             │               │
+     ┌───────▼───────┐ ┌────▼──────────┐
+     │  File Watcher  │ │ Obsidian Vault │
+     │  (watchdog)    │ │               │
+     └───────┬───────┘ │  Inbox/       │
+             │          │  Needs_Action/ │
+             └─────────►│  Done/        │
+                        │  Logs/        │
+                        │  Dashboard.md │
+                        └───────────────┘
+```
+
+**Data Flow:** New file → `Inbox/` → Watcher detects → creates action in `Needs_Action/` → Agent processes → moves to `Done/` → logs to `Logs/` → updates `Dashboard.md`
+
+## Vault Structure
+
+| Folder | Purpose |
+|--------|---------|
+| `AI_Employee_Vault/Inbox/` | File watcher monitors this directory |
+| `AI_Employee_Vault/Needs_Action/` | Action items pending processing |
+| `AI_Employee_Vault/Done/` | Completed items archive |
+| `AI_Employee_Vault/Logs/` | Daily JSON logs (YYYY-MM-DD.json) |
+| `AI_Employee_Vault/Dashboard.md` | Real-time status overview |
+| `AI_Employee_Vault/Company_Handbook.md` | Operational rules & policies |
+
+## Agent Skills
+
+1. **vault-management** — Read/write vault files, list directories, move files, update Dashboard
+2. **watcher-management** — Start/stop file watcher, check status, view logs
+3. **file-processing** — Process Needs_Action items, parse metadata, archive to Done, log actions
+
+## Code Standards
+
+- Python 3.13+
+- UTF-8 encoding everywhere
+- ISO 8601 timestamps
+- All logs as structured JSON
+- No hardcoded secrets — use `.env`
+
+---
+
+# Claude Code Rules (SpecKit Plus)
 
 You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architext to build products.
 
