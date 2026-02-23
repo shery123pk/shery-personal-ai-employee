@@ -1,3 +1,10 @@
+---
+name: vault-management
+description: Read, write, move vault files and update Dashboard
+priority: critical
+tier: bronze
+---
+
 # Skill: Vault Management
 
 Manage the Obsidian vault at `AI_Employee_Vault/`.

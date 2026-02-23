@@ -1,3 +1,10 @@
+---
+name: file-processing
+description: Process Needs_Action items, archive to Done, log actions
+priority: required
+tier: bronze
+---
+
 # Skill: File Processing
 
 Process action items from `AI_Employee_Vault/Needs_Action/`.

@@ -1,3 +1,10 @@
+---
+name: watcher-management
+description: Start, stop, and monitor the file system watcher
+priority: critical
+tier: bronze
+---
+
 # Skill: Watcher Management
 
 Control the file system watcher that monitors `AI_Employee_Vault/Inbox/`.

@@ -1,55 +1,63 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!-- Sync Impact Report
+Version change: 0.0.0 → 1.0.0
+Added principles: Vault-First, Watcher Reliability, Structured Logging, Priority-Driven Processing, Security by Default, Simplicity
+Added sections: Operational Standards, Development Workflow
+Removed sections: none
+Templates requiring updates: ✅ all current
+Follow-up TODOs: none
+-->
+
+# Shery Personal AI Employee Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Vault-First
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Every operation MUST read from and write to the Obsidian vault (`AI_Employee_Vault/`). The vault is the single source of truth for all task state. No in-memory-only state is permitted — if the agent restarts, the vault MUST reflect the last known state. Files flow through a strict pipeline: `Inbox/ → Needs_Action/ → Done/`.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Watcher Reliability
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+The file system watcher MUST detect every new file in `Inbox/` without exception. On startup, the watcher MUST perform an initial scan to catch files added while it was offline. The watcher uses the `BaseWatcher` abstract class to ensure consistent interface across implementations. Only one watcher instance may run at a time.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Structured Logging
 
-### [PRINCIPLE_6_NAME]
+All events MUST be logged as structured JSON to `AI_Employee_Vault/Logs/YYYY-MM-DD.json`. Every log entry MUST include: ISO 8601 timestamp, action name, source identifier, and result. Console logging mirrors vault logging for real-time visibility. No silent failures — errors MUST be logged before propagating.
 
+### IV. Priority-Driven Processing
 
-[PRINCIPLE__DESCRIPTION]
+Files MUST be classified by priority keywords: URGENT (immediate), REVIEW (current session), FYI (when queue clears). Default priority is Medium. Processing order MUST respect priority: URGENT first, then REVIEW, then FYI, then Medium. Priority is determined by keyword presence in filename or content.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### V. Security by Default
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+No secrets, tokens, or credentials stored in vault or committed to git. All configuration MUST use environment variables via `.env`. The vault is git-tracked — assume all vault contents are public. Sensitive files MUST NOT be placed in Inbox. `.claude/settings.local.json` is gitignored to prevent credential leakage.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### VI. Simplicity
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+Start with the minimum viable implementation. No premature abstractions — three similar lines are better than a premature helper. YAGNI: do not build for hypothetical future requirements. Every file and function MUST have a clear, single purpose. Prefer flat structures over deep nesting.
+
+## Operational Standards
+
+- Python 3.13+ required
+- UTF-8 encoding everywhere, no exceptions
+- ISO 8601 for all timestamps (`YYYY-MM-DDTHH:MM:SSZ`)
+- Dashboard MUST be updated after every vault modification
+- Action files use naming convention: `FILE_[original_name].md`
+- One log file per day, append-only
+
+## Development Workflow
+
+- All changes go through git with descriptive commit messages
+- SpecKit Plus slash commands used for spec-driven development
+- Code review via pull requests when collaborating
+- E2E test (`python scripts/e2e_test.py`) MUST pass before any release
+- No force pushes to main/master branch
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution is the authoritative guide for all development and operational decisions on the Shery Personal AI Employee project. Amendments require:
+1. Documentation of the change and rationale
+2. Version bump following semantic versioning (MAJOR.MINOR.PATCH)
+3. Update to all dependent artifacts (CLAUDE.md, templates, README)
+4. All PRs and code reviews MUST verify compliance with these principles
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-24 | **Last Amended**: 2026-02-24
