@@ -1,6 +1,7 @@
-"""End-to-end test: 3 files through the full watcher pipeline."""
+"""End-to-end test: Silver tier full pipeline with 14 checks."""
 
 import json
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -12,21 +13,25 @@ from logger import get_today_log_path, iso_now, log_to_vault
 
 VAULT_DIR = Path(__file__).resolve().parent.parent / "AI_Employee_Vault"
 DONE_DIR = VAULT_DIR / "Done"
+PLANS_DIR = VAULT_DIR / "Plans"
+PENDING_APPROVAL_DIR = VAULT_DIR / "Pending_Approval"
+APPROVED_DIR = VAULT_DIR / "Approved"
+REJECTED_DIR = VAULT_DIR / "Rejected"
 
 
 def main() -> None:
     print("=" * 60)
-    print("END-TO-END TEST: 3 Files Through Full Pipeline")
+    print("END-TO-END TEST: Silver Tier Full Pipeline (14 Checks)")
     print("=" * 60)
 
     # ── Step 1: Start watcher ──
-    print("\n[1/6] Starting file watcher...")
+    print("\n[1/10] Starting file watcher...")
     watcher = FileSystemWatcher()
     watcher.start()
-    print("       Watcher is running.\n")
+    print("        Watcher is running.\n")
 
     # ── Step 2: Drop 3 test files into Inbox ──
-    print("[2/6] Dropping 3 files into Inbox...")
+    print("[2/10] Dropping 3 files into Inbox...")
     test_files = [
         ("URGENT_budget_report.txt", "Q1 2026 budget needs immediate review."),
         ("REVIEW_meeting_notes.md", "## Team Standup\n- Discussed roadmap\n- Action items assigned"),
@@ -36,34 +41,34 @@ def main() -> None:
     for name, content in test_files:
         path = INBOX_DIR / name
         path.write_text(content, encoding="utf-8")
-        print(f"       Dropped: {name} ({len(content)} bytes)")
+        print(f"        Dropped: {name} ({len(content)} bytes)")
         time.sleep(1.5)
 
     print()
 
     # ── Step 3: Verify action files in Needs_Action ──
-    print("[3/6] Checking Needs_Action for action files...")
+    print("[3/10] Checking Needs_Action for action files...")
     time.sleep(1)
     action_files = sorted(
         f for f in NEEDS_ACTION_DIR.iterdir() if f.name.startswith("FILE_")
     )
-    print(f"       Found {len(action_files)} action file(s):")
+    print(f"        Found {len(action_files)} action file(s):")
     for af in action_files:
         content = af.read_text(encoding="utf-8")
         for line in content.splitlines():
             if "**priority:**" in line:
                 priority = line.split("**priority:**")[1].strip()
-                print(f"       - {af.name}  [priority: {priority}]")
+                print(f"        - {af.name}  [priority: {priority}]")
                 break
 
     if len(action_files) != 3:
-        print("       FAIL: Expected 3 action files!")
+        print("        FAIL: Expected 3 action files!")
         watcher.stop()
         sys.exit(1)
-    print("       All 3 action files created.\n")
+    print("        All 3 action files created.\n")
 
     # ── Step 4: Process each action file → move to Done ──
-    print("[4/6] Processing action files (Needs_Action -> Done)...")
+    print("[4/10] Processing action files (Needs_Action -> Done)...")
     for af in action_files:
         content = af.read_text(encoding="utf-8")
         updated = content.replace("**status:** pending", "**status:** completed")
@@ -85,22 +90,94 @@ def main() -> None:
             result="completed",
             priority=priority,
         )
-        print(f"       Processed: {af.name} -> Done/")
+        print(f"        Processed: {af.name} -> Done/")
 
     print()
 
-    # ── Step 5: Update Dashboard ──
-    print("[5/6] Updating Dashboard.md...")
+    # ── Step 5: Test approval workflow ──
+    print("[5/10] Testing approval workflow...")
+    from approval_utils import create_approval_request
+
+    approval_path = create_approval_request(
+        action_type="send_email",
+        summary="Test email approval",
+        details={"to": "test@example.com", "subject": "Test", "body": "Hello"},
+    )
+    print(f"        Created approval request: {approval_path.name}")
+
+    # Move to Approved and verify handling
+    approved_path = APPROVED_DIR / approval_path.name
+    shutil.move(str(approval_path), str(approved_path))
+    print(f"        Moved to Approved/: {approved_path.name}")
+
+    from approval_watcher import ApprovalWatcher, parse_approval_metadata
+
+    approval_watcher = ApprovalWatcher()
+    approval_watcher._handle_approved(approved_path)
+    print("        Approval watcher processed the approved file.")
+
+    # Test rejection workflow
+    reject_path = create_approval_request(
+        action_type="post_linkedin",
+        summary="Test LinkedIn rejection",
+        details={"content": "Test post"},
+    )
+    rejected_dest = REJECTED_DIR / reject_path.name
+    shutil.move(str(reject_path), str(rejected_dest))
+    approval_watcher._handle_rejected(rejected_dest)
+    print("        Rejection workflow completed.\n")
+
+    # ── Step 6: Test LinkedIn poster (dry run) ──
+    print("[6/10] Testing LinkedIn poster (dry run)...")
+    from linkedin_poster import create_linkedin_post_request, publish_to_linkedin
+
+    li_result = publish_to_linkedin("Test post content", "")
+    print(f"        Result: {li_result}")
+    print()
+
+    # ── Step 7: Test config module ──
+    print("[7/10] Verifying config module...")
+    from config import (
+        VAULT_PATH as CFG_VAULT,
+        GMAIL_POLL_INTERVAL_SEC,
+        LINKEDIN_DRY_RUN,
+        SCHEDULER_GMAIL_INTERVAL_MIN,
+        SENSITIVE_ACTION_KEYWORDS,
+    )
+    print(f"        VAULT_PATH: {CFG_VAULT}")
+    print(f"        GMAIL_POLL_INTERVAL: {GMAIL_POLL_INTERVAL_SEC}s")
+    print(f"        LINKEDIN_DRY_RUN: {LINKEDIN_DRY_RUN}")
+    print(f"        SCHEDULER_GMAIL_INTERVAL: {SCHEDULER_GMAIL_INTERVAL_MIN}min")
+    print(f"        SENSITIVE_KEYWORDS: {SENSITIVE_ACTION_KEYWORDS}")
+    print()
+
+    # ── Step 8: Test scheduler creation ──
+    print("[8/10] Verifying scheduler setup...")
+    from scheduler import create_scheduler
+
+    scheduler = create_scheduler()
+    jobs = scheduler.get_jobs()
+    print(f"        Scheduler created with {len(jobs)} jobs:")
+    for job in jobs:
+        print(f"        - {job.name}")
+    print()
+
+    # ── Step 9: Update Dashboard ──
+    print("[9/10] Updating Dashboard.md...")
     inbox_count = len([f for f in INBOX_DIR.iterdir() if not f.name.startswith(".")])
     needs_count = len([f for f in NEEDS_ACTION_DIR.iterdir() if not f.name.startswith(".")])
     done_count = len([f for f in DONE_DIR.iterdir() if not f.name.startswith(".")])
+    plans_count = len([f for f in PLANS_DIR.iterdir() if not f.name.startswith(".")])
+    pending_count = len([f for f in PENDING_APPROVAL_DIR.iterdir() if not f.name.startswith(".")])
 
     log_path = get_today_log_path()
     entries = json.loads(log_path.read_text(encoding="utf-8"))
 
     activity_rows = ""
-    for e in entries:
-        activity_rows += f'| {e["timestamp"]} | {e["action"]} | {e["source"]} | {e["result"]} |\n'
+    for e in entries[-20:]:
+        activity_rows += (
+            f'| {e["timestamp"]} | {e["action"]} | {e["source"]} | {e["result"]} |\n'
+        )
 
     dashboard = (
         "# AI Employee Dashboard\n"
@@ -112,7 +189,11 @@ def main() -> None:
         "| Component | Status | Details |\n"
         "|-----------|--------|--------|\n"
         "| File Watcher | Running | Monitoring Inbox/ |\n"
-        "| Claude Agent | Ready | Available for tasks |\n"
+        "| Gmail Watcher | Ready | Configured for polling |\n"
+        "| Approval Watcher | Running | Monitoring Approved/ & Rejected/ |\n"
+        "| Scheduler | Ready | 4 periodic jobs configured |\n"
+        "| MCP Email Server | Ready | 4 tools available |\n"
+        "| Claude Agent | Ready | 8 skills loaded |\n"
         "| Vault Access | OK | All folders accessible |\n"
         "\n"
         "## Folder Counts\n"
@@ -122,41 +203,61 @@ def main() -> None:
         f"| Inbox | {inbox_count} |\n"
         f"| Needs_Action | {needs_count} |\n"
         f"| Done | {done_count} |\n"
+        f"| Plans | {plans_count} |\n"
+        f"| Pending_Approval | {pending_count} |\n"
         "\n"
         "## Recent Activity\n"
         "\n"
-        "| Timestamp | Action | File | Result |\n"
-        "|-----------|--------|------|--------|\n"
+        "| Timestamp | Action | Source | Result |\n"
+        "|-----------|--------|--------|--------|\n"
         f"{activity_rows}"
     )
 
     (VAULT_DIR / "Dashboard.md").write_text(dashboard, encoding="utf-8")
-    print(f"       Inbox: {inbox_count}  |  Needs_Action: {needs_count}  |  Done: {done_count}")
-    print("       Dashboard.md updated.\n")
+    print(f"        Inbox: {inbox_count}  |  Needs_Action: {needs_count}  |  Done: {done_count}")
+    print("        Dashboard.md updated.\n")
 
-    # ── Step 6: Show logs ──
-    print("[6/6] Vault log entries:")
-    for e in entries:
-        print(f'       {e["timestamp"]}  {e["action"]:20s}  {e["source"]:40s}  {e["result"]}')
+    # ── Step 10: Show logs ──
+    print("[10/10] Vault log entries (last 10):")
+    for e in entries[-10:]:
+        print(f'        {e["timestamp"]}  {e["action"]:30s}  {e["source"]:30s}  {e["result"]}')
 
     # ── Stop watcher ──
     watcher.stop()
 
-    # ── Final verification ──
+    # ── Final verification — 14 checks ──
     print("\n" + "=" * 60)
-    print("VERIFICATION")
+    print("VERIFICATION — Silver Tier (14 Checks)")
     print("=" * 60)
 
     done_files = sorted(f.name for f in DONE_DIR.iterdir() if not f.name.startswith("."))
     log_entries = json.loads(log_path.read_text(encoding="utf-8"))
 
+    # Vault folder counts
+    skill_dir = Path(__file__).resolve().parent.parent / ".claude" / "skills"
+    skill_count = len([f for f in skill_dir.iterdir() if f.suffix == ".md"]) if skill_dir.exists() else 0
+
+    script_dir = Path(__file__).resolve().parent
+    watcher_scripts = [f for f in script_dir.iterdir() if "watcher" in f.name and f.suffix == ".py"]
+    mcp_scripts = [f for f in script_dir.iterdir() if "mcp" in f.name and f.suffix == ".py"]
+
     checks = [
+        # Bronze checks (1-6)
         ("3 files in Inbox", inbox_count == 3),
         ("0 files in Needs_Action", needs_count == 0),
-        ("3 files in Done", len(done_files) == 3),
+        ("3+ files in Done", len(done_files) >= 3),
         ("Log file exists", log_path.exists()),
         ("Log has >= 6 entries", len(log_entries) >= 6),
         ("Dashboard updated", "Running" in (VAULT_DIR / "Dashboard.md").read_text(encoding="utf-8")),
+        # Silver checks (7-14)
+        ("3+ watcher scripts exist", len(watcher_scripts) >= 3),
+        ("Approval workflow works", any("approval" in e["action"] for e in log_entries)),
+        ("LinkedIn dry-run works", any("linkedin" in e["action"] for e in log_entries)),
+        ("Config module loads", CFG_VAULT.exists()),
+        ("Scheduler has 4 jobs", len(jobs) == 4),
+        ("MCP server script exists", len(mcp_scripts) >= 1),
+        ("8 agent skills", skill_count >= 8),
+        ("Silver vault folders exist", PLANS_DIR.exists() and PENDING_APPROVAL_DIR.exists() and APPROVED_DIR.exists() and REJECTED_DIR.exists()),
     ]
 
     all_pass = True
@@ -168,9 +269,10 @@ def main() -> None:
 
     print()
     if all_pass:
-        print("ALL CHECKS PASSED")
+        print(f"ALL {len(checks)} CHECKS PASSED — Silver Tier Complete!")
     else:
-        print("SOME CHECKS FAILED")
+        failed = sum(1 for _, p in checks if not p)
+        print(f"{len(checks) - failed}/{len(checks)} CHECKS PASSED — {failed} FAILED")
     print("=" * 60)
 
 

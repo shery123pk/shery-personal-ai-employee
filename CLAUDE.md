@@ -1,29 +1,44 @@
-# Bronze Tier AI Employee — Sharmeen Asif
+# Silver Tier AI Employee — Sharmeen Asif
 
 > **Hackathon:** GIAIC / Panaversity Personal AI Employee Hackathon 0
 > **Owner:** Sharmeen Asif (@shery123pk)
-> **Tier:** Bronze — File-System Watcher + Obsidian Vault
+> **Tier:** Silver — Functional Assistant (Gmail + LinkedIn + Approval + MCP + Scheduler)
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│            Claude Code (Agent)          │
-│  Skills: vault · watcher · processing   │
-└────────────┬───────────────┬────────────┘
-             │               │
-     ┌───────▼───────┐ ┌────▼──────────┐
-     │  File Watcher  │ │ Obsidian Vault │
-     │  (watchdog)    │ │               │
-     └───────┬───────┘ │  Inbox/       │
-             │          │  Needs_Action/ │
-             └─────────►│  Done/        │
-                        │  Logs/        │
-                        │  Dashboard.md │
-                        └───────────────┘
+┌──────────────────────────────────────────────────────┐
+│                  Claude Code (Agent)                 │
+│  Skills: vault · watcher · processing · approval ·   │
+│          linkedin · planning · scheduling · email    │
+└────┬──────────┬──────────┬──────────┬───────────────┘
+     │          │          │          │
+┌────▼───┐ ┌───▼────┐ ┌───▼────┐ ┌───▼──────────────┐
+│  File  │ │ Gmail  │ │Approval│ │   MCP Email      │
+│Watcher │ │Watcher │ │Watcher │ │   Server         │
+│(watch  │ │(Gmail  │ │(watch  │ │  (4 tools)       │
+│ dog)   │ │ API)   │ │ dog)   │ │                  │
+└───┬────┘ └───┬────┘ └───┬────┘ └──────────────────┘
+    │          │          │
+    └──────────▼──────────┘
+         Obsidian Vault
+    ┌──────────────────────┐
+    │  Inbox/              │
+    │  Needs_Action/       │
+    │  Done/               │
+    │  Plans/              │
+    │  Pending_Approval/   │
+    │  Approved/           │
+    │  Rejected/           │
+    │  Logs/               │
+    │  Dashboard.md        │
+    └──────────────────────┘
 ```
 
-**Data Flow:** New file → `Inbox/` → Watcher detects → creates action in `Needs_Action/` → Agent processes → moves to `Done/` → logs to `Logs/` → updates `Dashboard.md`
+**Data Flow:**
+- **File:** Drop in `Inbox/` → Watcher → `Needs_Action/` → Process → `Done/`
+- **Email:** Gmail poll → `Needs_Action/` → Plan → Process → `Done/`
+- **Sensitive:** Action → `Pending_Approval/` → Human → `Approved/`/`Rejected/` → Execute/Log → `Done/`
 
 ## Vault Structure
 
@@ -32,15 +47,38 @@
 | `AI_Employee_Vault/Inbox/` | File watcher monitors this directory |
 | `AI_Employee_Vault/Needs_Action/` | Action items pending processing |
 | `AI_Employee_Vault/Done/` | Completed items archive |
+| `AI_Employee_Vault/Plans/` | Structured execution plans |
+| `AI_Employee_Vault/Pending_Approval/` | Sensitive actions awaiting human review |
+| `AI_Employee_Vault/Approved/` | Human-approved actions |
+| `AI_Employee_Vault/Rejected/` | Human-rejected actions |
 | `AI_Employee_Vault/Logs/` | Daily JSON logs (YYYY-MM-DD.json) |
 | `AI_Employee_Vault/Dashboard.md` | Real-time status overview |
 | `AI_Employee_Vault/Company_Handbook.md` | Operational rules & policies |
 
-## Agent Skills
+## Agent Skills (8 total)
 
+### Bronze Tier
 1. **vault-management** — Read/write vault files, list directories, move files, update Dashboard
 2. **watcher-management** — Start/stop file watcher, check status, view logs
 3. **file-processing** — Process Needs_Action items, parse metadata, archive to Done, log actions
+
+### Silver Tier
+4. **approval-management** — Human-in-the-loop approval for sensitive actions (email, LinkedIn, delete)
+5. **linkedin-posting** — Generate professional content and post to LinkedIn via approval workflow
+6. **planning** — Analyze action items and create structured execution plans with reasoning
+7. **scheduling** — Manage APScheduler periodic jobs (Gmail, processing, approvals, daily briefing)
+8. **email (MCP server)** — Search, read, send, draft emails via FastMCP server (4 tools)
+
+## MCP Server
+
+Register: `claude mcp add email-server -- python scripts/mcp_email_server.py`
+
+| Tool | Description | Requires Approval |
+|------|-------------|-------------------|
+| `search_emails` | Search Gmail by query | No |
+| `read_email` | Read full email content | No |
+| `send_email` | Send email (creates approval request) | Yes |
+| `draft_email` | Create Gmail draft | No |
 
 ## Code Standards
 
@@ -49,6 +87,8 @@
 - ISO 8601 timestamps
 - All logs as structured JSON
 - No hardcoded secrets — use `.env`
+- Sensitive actions require human approval
+- All watchers extend `BaseWatcher` abstract class
 
 ---
 

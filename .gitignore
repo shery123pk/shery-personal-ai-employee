@@ -22,3 +22,8 @@ Thumbs.db
 
 # Claude credentials (keep commands & skills)
 .claude/settings.local.json
+
+# Google OAuth credentials
+credentials.json
+token.json
+*.pickle
