@@ -25,5 +25,10 @@ Thumbs.db
 
 # Google OAuth credentials
 credentials.json
+client_secret_*.json
 token.json
 *.pickle
+
+# Obsidian internal config
+.obsidian/
+AI_Employee_Vault/.obsidian/
