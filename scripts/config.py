@@ -67,6 +67,56 @@ SCHEDULER_BRIEFING_HOUR = int(os.getenv("SCHEDULER_BRIEFING_HOUR", "9"))
 SENSITIVE_ACTION_KEYWORDS = [
     "send_email",
     "post_linkedin",
+    "post_twitter",
     "delete",
     "modify_config",
 ]
+
+# ---------------------------------------------------------------------------
+# OpenAI settings (Gold tier)
+# ---------------------------------------------------------------------------
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "1000"))
+
+# ---------------------------------------------------------------------------
+# Gold tier vault paths
+# ---------------------------------------------------------------------------
+
+BRIEFINGS_DIR = VAULT_PATH / "Briefings"
+KNOWLEDGE_BASE_DIR = VAULT_PATH / "Knowledge_Base"
+FINANCE_CSV_DIR = VAULT_PATH / "Finance"
+
+# ---------------------------------------------------------------------------
+# Autonomous loop settings (Gold tier)
+# ---------------------------------------------------------------------------
+
+AUTONOMOUS_MAX_ITERATIONS = int(os.getenv("AUTONOMOUS_MAX_ITERATIONS", "10"))
+AUTONOMOUS_RETRY_LIMIT = int(os.getenv("AUTONOMOUS_RETRY_LIMIT", "3"))
+
+# ---------------------------------------------------------------------------
+# Process watchdog (Gold tier)
+# ---------------------------------------------------------------------------
+
+WATCHDOG_HEALTH_INTERVAL_SEC = int(os.getenv("WATCHDOG_HEALTH_INTERVAL_SEC", "60"))
+
+# ---------------------------------------------------------------------------
+# Finance watcher (Gold tier)
+# ---------------------------------------------------------------------------
+
+FINANCE_POLL_INTERVAL_SEC = int(os.getenv("FINANCE_POLL_INTERVAL_SEC", "300"))
+
+# ---------------------------------------------------------------------------
+# Scheduler Gold additions
+# ---------------------------------------------------------------------------
+
+SCHEDULER_HEALTH_CHECK_MIN = int(os.getenv("SCHEDULER_HEALTH_CHECK_MIN", "2"))
+SCHEDULER_AUTONOMOUS_INTERVAL_MIN = int(os.getenv("SCHEDULER_AUTONOMOUS_INTERVAL_MIN", "15"))
+SCHEDULER_WEEKLY_BRIEFING_DAY = os.getenv("SCHEDULER_WEEKLY_BRIEFING_DAY", "mon")
+
+# ---------------------------------------------------------------------------
+# DEV_MODE — synthetic responses for services without live APIs
+# ---------------------------------------------------------------------------
+
+DEV_MODE = os.getenv("DEV_MODE", "true").lower() in ("true", "1", "yes")

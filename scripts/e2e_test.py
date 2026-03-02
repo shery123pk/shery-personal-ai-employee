@@ -1,4 +1,4 @@
-"""End-to-end test: Silver tier full pipeline with 14 checks."""
+"""End-to-end test: Gold tier full pipeline with 22 checks (14 Silver + 8 Gold)."""
 
 import json
 import shutil
@@ -21,7 +21,7 @@ REJECTED_DIR = VAULT_DIR / "Rejected"
 
 def main() -> None:
     print("=" * 60)
-    print("END-TO-END TEST: Silver Tier Full Pipeline (14 Checks)")
+    print("END-TO-END TEST: Gold Tier Full Pipeline (22 Checks)")
     print("=" * 60)
 
     # ── Step 1: Start watcher ──
@@ -225,9 +225,67 @@ def main() -> None:
     # ── Stop watcher ──
     watcher.stop()
 
-    # ── Final verification — 14 checks ──
+    # ── Gold Step 11: Test AI agents ──
+    print("\n[11/14] Testing Gold tier AI agents...")
+    base_agent_importable = False
+    agent_count = 0
+    orchestrator_works = False
+    try:
+        from agents.base_agent import BaseAgent
+        base_agent_importable = True
+        print("        BaseAgent imported successfully.")
+
+        from agents.email_agent import EmailAgent
+        from agents.research_agent import ResearchAgent
+        from agents.meeting_agent import MeetingAgent
+        from agents.task_optimizer import TaskOptimizer
+        from agents.orchestrator import OrchestratorAgent
+        agent_count = 5
+        print(f"        {agent_count} agent classes imported.")
+
+        # Test orchestrator routing
+        orchestrator = OrchestratorAgent()
+        task_type = orchestrator.classify_task_type("Please review this email from the client about the budget")
+        print(f"        Orchestrator classified test task as: {task_type}")
+        orchestrator_works = task_type in ("email", "research", "meeting", "general")
+    except Exception as exc:
+        print(f"        Agent import error: {exc}")
+
+    # ── Gold Step 12: Test briefing generation ──
+    print("\n[12/14] Testing briefing generation...")
+    briefing_path_exists = False
+    try:
+        from briefing_generator import generate_daily_briefing
+        bp = generate_daily_briefing()
+        briefing_path_exists = bp.exists()
+        print(f"        Daily briefing generated: {bp.name}")
+    except Exception as exc:
+        print(f"        Briefing error: {exc}")
+
+    # ── Gold Step 13: Test Gold config ──
+    print("\n[13/14] Verifying Gold config...")
+    from config import (
+        DEV_MODE,
+        OPENAI_MODEL,
+        AUTONOMOUS_MAX_ITERATIONS,
+        BRIEFINGS_DIR,
+        KNOWLEDGE_BASE_DIR,
+    )
+    print(f"        DEV_MODE: {DEV_MODE}")
+    print(f"        OPENAI_MODEL: {OPENAI_MODEL}")
+    print(f"        AUTONOMOUS_MAX_ITERATIONS: {AUTONOMOUS_MAX_ITERATIONS}")
+
+    # ── Gold Step 14: Show Gold components ──
+    print("\n[14/14] Gold component summary...")
+    agents_dir = Path(__file__).resolve().parent / "agents"
+    agent_files = [f for f in agents_dir.iterdir() if f.suffix == ".py" and f.name != "__init__.py"] if agents_dir.exists() else []
+    print(f"        Agent files: {len(agent_files)}")
+    for af in sorted(agent_files):
+        print(f"          - {af.name}")
+
+    # ── Final verification — 22 checks ──
     print("\n" + "=" * 60)
-    print("VERIFICATION — Silver Tier (14 Checks)")
+    print("VERIFICATION — Gold Tier (22 Checks)")
     print("=" * 60)
 
     done_files = sorted(f.name for f in DONE_DIR.iterdir() if not f.name.startswith("."))
@@ -240,6 +298,11 @@ def main() -> None:
     script_dir = Path(__file__).resolve().parent
     watcher_scripts = [f for f in script_dir.iterdir() if "watcher" in f.name and f.suffix == ".py"]
     mcp_scripts = [f for f in script_dir.iterdir() if "mcp" in f.name and f.suffix == ".py"]
+
+    # Gold vault folders
+    briefings_dir = VAULT_DIR / "Briefings"
+    knowledge_base_dir = VAULT_DIR / "Knowledge_Base"
+    finance_dir = VAULT_DIR / "Finance"
 
     checks = [
         # Bronze checks (1-6)
@@ -254,10 +317,19 @@ def main() -> None:
         ("Approval workflow works", any("approval" in e["action"] for e in log_entries)),
         ("LinkedIn dry-run works", any("linkedin" in e["action"] for e in log_entries)),
         ("Config module loads", CFG_VAULT.exists()),
-        ("Scheduler has 4 jobs", len(jobs) == 4),
+        ("Scheduler has 7 jobs", len(jobs) == 7),
         ("MCP server script exists", len(mcp_scripts) >= 1),
-        ("8 agent skills", skill_count >= 8),
+        ("8+ agent skills", skill_count >= 8),
         ("Silver vault folders exist", PLANS_DIR.exists() and PENDING_APPROVAL_DIR.exists() and APPROVED_DIR.exists() and REJECTED_DIR.exists()),
+        # Gold checks (15-22)
+        ("5+ watcher scripts exist", len(watcher_scripts) >= 5),
+        ("BaseAgent class importable", base_agent_importable),
+        ("5 agent classes exist", agent_count >= 5),
+        ("4 MCP server scripts exist", len(mcp_scripts) >= 4),
+        ("Orchestrator routes tasks", orchestrator_works),
+        ("Briefing generates", briefing_path_exists),
+        ("Scheduler has 7 jobs", len(jobs) == 7),
+        ("13+ agent skills exist", skill_count >= 13),
     ]
 
     all_pass = True
@@ -269,7 +341,7 @@ def main() -> None:
 
     print()
     if all_pass:
-        print(f"ALL {len(checks)} CHECKS PASSED — Silver Tier Complete!")
+        print(f"ALL {len(checks)} CHECKS PASSED — Gold Tier Complete!")
     else:
         failed = sum(1 for _, p in checks if not p)
         print(f"{len(checks) - failed}/{len(checks)} CHECKS PASSED — {failed} FAILED")

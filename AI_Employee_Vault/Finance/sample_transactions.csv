@@ -1,0 +1,6 @@
+date,description,amount,category,type
+2026-03-01,AWS Monthly Subscription,149.99,Infrastructure,expense
+2026-03-01,Client Payment - Acme Corp,5000.00,Revenue,income
+2026-03-02,Office Supplies,45.50,Operations,expense
+2026-03-02,Suspicious Transfer,9999.99,Unknown,expense
+2026-03-02,Team Lunch,85.00,Operations,expense

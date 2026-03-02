@@ -1,0 +1,110 @@
+[
+  {
+    "timestamp": "2026-03-02T10:10:05+00:00",
+    "action": "watcher_started",
+    "source": "file_watcher",
+    "result": "success"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:05+00:00",
+    "action": "file_detected",
+    "source": "URGENT_budget_report.txt",
+    "result": "action_created",
+    "priority": "URGENT",
+    "action_file": "FILE_URGENT_budget_report.txt.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:07+00:00",
+    "action": "file_detected",
+    "source": "REVIEW_meeting_notes.md",
+    "result": "action_created",
+    "priority": "REVIEW",
+    "action_file": "FILE_REVIEW_meeting_notes.md.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:09+00:00",
+    "action": "file_detected",
+    "source": "FYI_newsletter_update.txt",
+    "result": "action_created",
+    "priority": "FYI",
+    "action_file": "FILE_FYI_newsletter_update.txt.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:11+00:00",
+    "action": "processed",
+    "source": "FILE_FYI_newsletter_update.txt.md",
+    "result": "completed",
+    "priority": "FYI"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:11+00:00",
+    "action": "processed",
+    "source": "FILE_REVIEW_meeting_notes.md.md",
+    "result": "completed",
+    "priority": "REVIEW"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:11+00:00",
+    "action": "processed",
+    "source": "FILE_URGENT_budget_report.txt.md",
+    "result": "completed",
+    "priority": "URGENT"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:11+00:00",
+    "action": "approval_requested",
+    "source": "send_email",
+    "result": "pending",
+    "summary": "Test email approval",
+    "file": "APPROVE_send_email_2026-03-02T10-10-11+00-00.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "approval_executed",
+    "source": "APPROVE_send_email_2026-03-02T10-10-11+00-00.md",
+    "result": "success",
+    "action_type": "send_email",
+    "execution_result": "Email sent to test@example.com"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "approval_requested",
+    "source": "post_linkedin",
+    "result": "pending",
+    "summary": "Test LinkedIn rejection",
+    "file": "APPROVE_post_linkedin_2026-03-02T10-10-20+00-00.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "approval_rejected",
+    "source": "APPROVE_post_linkedin_2026-03-02T10-10-20+00-00.md",
+    "result": "rejected",
+    "action_type": "post_linkedin"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "linkedin_post_dry_run",
+    "source": "linkedin_poster",
+    "result": "dry_run",
+    "content_preview": "Test post content"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "watcher_stopped",
+    "source": "file_watcher",
+    "result": "success"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "agent_daily_briefing",
+    "source": "orchestrator",
+    "result": "success",
+    "path": "Z:\\zero-hackthon-FTE\\fte_silver\\AI_Employee_Vault\\Briefings\\gold_briefing_2026-03-02.md"
+  },
+  {
+    "timestamp": "2026-03-02T10:10:20+00:00",
+    "action": "daily_briefing_generated",
+    "source": "briefing_generator",
+    "result": "success"
+  }
+]

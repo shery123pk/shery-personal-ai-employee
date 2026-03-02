@@ -1,44 +1,50 @@
-# Silver Tier AI Employee — Sharmeen Asif
+# Gold Tier AI Employee — Sharmeen Asif
 
 > **Hackathon:** GIAIC / Panaversity Personal AI Employee Hackathon 0
 > **Owner:** Sharmeen Asif (@shery123pk)
-> **Tier:** Silver — Functional Assistant (Gmail + LinkedIn + Approval + MCP + Scheduler)
+> **Tier:** Gold — Full Autonomous Employee (5 AI Agents + 5 Watchers + 4 MCP + Autonomous Loop)
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                  Claude Code (Agent)                 │
-│  Skills: vault · watcher · processing · approval ·   │
-│          linkedin · planning · scheduling · email    │
-└────┬──────────┬──────────┬──────────┬───────────────┘
-     │          │          │          │
-┌────▼───┐ ┌───▼────┐ ┌───▼────┐ ┌───▼──────────────┐
-│  File  │ │ Gmail  │ │Approval│ │   MCP Email      │
-│Watcher │ │Watcher │ │Watcher │ │   Server         │
-│(watch  │ │(Gmail  │ │(watch  │ │  (4 tools)       │
-│ dog)   │ │ API)   │ │ dog)   │ │                  │
-└───┬────┘ └───┬────┘ └───┬────┘ └──────────────────┘
-    │          │          │
-    └──────────▼──────────┘
-         Obsidian Vault
-    ┌──────────────────────┐
-    │  Inbox/              │
-    │  Needs_Action/       │
-    │  Done/               │
-    │  Plans/              │
-    │  Pending_Approval/   │
-    │  Approved/           │
-    │  Rejected/           │
-    │  Logs/               │
-    │  Dashboard.md        │
-    └──────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     Claude Code (Orchestrator)               │
+│  Skills (13): vault · watcher · processing · approval ·     │
+│    linkedin · planning · scheduling · email · research ·     │
+│    meeting-prep · task-optimization · orchestration ·        │
+│    email-intelligence                                        │
+└──┬────────┬────────┬────────┬────────┬──────────────────────┘
+   │        │        │        │        │
+┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──────────────────────┐
+│File │ │Gmail│ │Appr.│ │Proc.│ │Finance  │  4 MCP Servers │
+│Watch│ │Watch│ │Watch│ │Watch│ │Watcher  │  Email·Calendar│
+│(dog)│ │(API)│ │(dog)│ │(dog)│ │(CSV)    │  Task·Social   │
+└──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬─────┘────────────────┘
+   │       │       │       │       │
+   └───────┴───────▼───────┴───────┘
+             Obsidian Vault
+   ┌────────────────────────────────┐
+   │  Inbox/  Needs_Action/  Done/  │
+   │  Plans/  Pending_Approval/     │
+   │  Approved/  Rejected/  Logs/   │
+   │  Briefings/  Knowledge_Base/   │
+   │  Finance/  Dashboard.md        │
+   └────────────────────────────────┘
+
+   ┌────────────────────────────────┐
+   │         5 AI Agents            │
+   │  Email · Research · Meeting    │
+   │  TaskOptimizer · Orchestrator  │
+   │  (OpenAI gpt-4o-mini)         │
+   └────────────────────────────────┘
 ```
 
 **Data Flow:**
-- **File:** Drop in `Inbox/` → Watcher → `Needs_Action/` → Process → `Done/`
-- **Email:** Gmail poll → `Needs_Action/` → Plan → Process → `Done/`
+- **File:** Drop in `Inbox/` → Watcher → `Needs_Action/` → Agent processes → `Done/`
+- **Email:** Gmail poll → `Needs_Action/` → EmailAgent analyses → Plan → Process → `Done/`
 - **Sensitive:** Action → `Pending_Approval/` → Human → `Approved/`/`Rejected/` → Execute/Log → `Done/`
+- **Autonomous:** Orchestrator scans `Needs_Action/` → TaskOptimizer prioritises → Route to agent → `Done/`
+- **Finance:** CSV in `Finance/` → FinanceWatcher parses → Anomalies → `Needs_Action/`
 
 ## Vault Structure
 
@@ -47,15 +53,30 @@
 | `AI_Employee_Vault/Inbox/` | File watcher monitors this directory |
 | `AI_Employee_Vault/Needs_Action/` | Action items pending processing |
 | `AI_Employee_Vault/Done/` | Completed items archive |
-| `AI_Employee_Vault/Plans/` | Structured execution plans |
+| `AI_Employee_Vault/Plans/` | Structured execution plans + Eisenhower Matrix |
 | `AI_Employee_Vault/Pending_Approval/` | Sensitive actions awaiting human review |
 | `AI_Employee_Vault/Approved/` | Human-approved actions |
 | `AI_Employee_Vault/Rejected/` | Human-rejected actions |
-| `AI_Employee_Vault/Logs/` | Daily JSON logs (YYYY-MM-DD.json) |
+| `AI_Employee_Vault/Logs/` | Daily JSON logs + LLM usage tracking |
+| `AI_Employee_Vault/Briefings/` | Daily + weekly intelligence briefings (Gold) |
+| `AI_Employee_Vault/Knowledge_Base/` | Research summaries (Gold) |
+| `AI_Employee_Vault/Finance/` | CSV transaction monitoring (Gold) |
 | `AI_Employee_Vault/Dashboard.md` | Real-time status overview |
 | `AI_Employee_Vault/Company_Handbook.md` | Operational rules & policies |
 
-## Agent Skills (8 total)
+## AI Agents (5 total — Gold)
+
+| Agent | Module | Purpose |
+|-------|--------|---------|
+| **EmailAgent** | `agents/email_agent.py` | Sentiment analysis, priority suggestion, auto-response drafts |
+| **ResearchAgent** | `agents/research_agent.py` | Deep research, summarisation, Knowledge Base building |
+| **MeetingAgent** | `agents/meeting_agent.py` | Agenda preparation, action item extraction |
+| **TaskOptimizer** | `agents/task_optimizer.py` | Eisenhower Matrix prioritisation |
+| **OrchestratorAgent** | `agents/orchestrator.py` | Agent coordination, autonomous loop, briefings |
+
+All agents extend `BaseAgent` (`agents/base_agent.py`) and use OpenAI gpt-4o-mini via `agents/llm_gateway.py`.
+
+## Agent Skills (13 total)
 
 ### Bronze Tier
 1. **vault-management** — Read/write vault files, list directories, move files, update Dashboard
@@ -65,12 +86,20 @@
 ### Silver Tier
 4. **approval-management** — Human-in-the-loop approval for sensitive actions (email, LinkedIn, delete)
 5. **linkedin-posting** — Generate professional content and post to LinkedIn via approval workflow
-6. **planning** — Analyze action items and create structured execution plans with reasoning
-7. **scheduling** — Manage APScheduler periodic jobs (Gmail, processing, approvals, daily briefing)
-8. **email (MCP server)** — Search, read, send, draft emails via FastMCP server (4 tools)
+6. **planning** — Analyse action items and create structured execution plans with reasoning
+7. **scheduling** — Manage APScheduler periodic jobs (7 jobs total)
+8. **email-management** — Search, read, send, draft emails via FastMCP server (4 tools)
 
-## MCP Server
+### Gold Tier
+9. **email-intelligence** — AI-powered email sentiment analysis and auto-response drafts
+10. **research** — Deep research with LLM summarisation, Knowledge Base building
+11. **meeting-prep** — Meeting agenda preparation and follow-up action items
+12. **task-optimization** — Eisenhower Matrix prioritisation and workload balancing
+13. **orchestration** — Autonomous agent coordination and task execution loop
 
+## MCP Servers (4 total)
+
+### Email Server
 Register: `claude mcp add email-server -- python scripts/mcp_email_server.py`
 
 | Tool | Description | Requires Approval |
@@ -79,6 +108,35 @@ Register: `claude mcp add email-server -- python scripts/mcp_email_server.py`
 | `read_email` | Read full email content | No |
 | `send_email` | Send email (creates approval request) | Yes |
 | `draft_email` | Create Gmail draft | No |
+
+### Calendar Server (Gold)
+Register: `claude mcp add calendar-server -- python scripts/mcp_calendar_server.py`
+
+| Tool | Description | Requires Approval |
+|------|-------------|-------------------|
+| `create_event` | Create calendar event | No |
+| `list_events` | List events for date range | No |
+| `update_event` | Update existing event | No |
+| `delete_event` | Delete event | Yes |
+
+### Task Server (Gold)
+Register: `claude mcp add task-server -- python scripts/mcp_task_server.py`
+
+| Tool | Description | Requires Approval |
+|------|-------------|-------------------|
+| `create_task` | Create task in Needs_Action/ | No |
+| `list_tasks` | List tasks from vault folders | No |
+| `update_task` | Update task metadata | No |
+| `optimize_tasks` | Run Eisenhower Matrix | No |
+
+### Social Server (Gold)
+Register: `claude mcp add social-server -- python scripts/mcp_social_server.py`
+
+| Tool | Description | Requires Approval |
+|------|-------------|-------------------|
+| `post_linkedin` | Post to LinkedIn | Yes |
+| `post_twitter` | Post to Twitter/X | Yes |
+| `schedule_post` | Schedule future post | Yes |
 
 ## Code Standards
 

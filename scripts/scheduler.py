@@ -1,10 +1,13 @@
 """Scheduler — APScheduler-based periodic jobs for the AI Employee.
 
-Runs four periodic tasks:
+Runs seven periodic tasks (4 Silver + 3 Gold):
 1. Check Gmail every N minutes
 2. Process Needs_Action queue every N minutes
 3. Check Approved folder every N minutes
 4. Generate daily briefing at configured hour
+5. Health check every N minutes (Gold)
+6. Autonomous loop every N minutes (Gold)
+7. Weekly briefing on configured day (Gold)
 
 Usage:
     python scripts/scheduler.py
@@ -31,9 +34,12 @@ from config import (
     PENDING_APPROVAL_DIR,
     PLANS_DIR,
     SCHEDULER_APPROVAL_INTERVAL_MIN,
+    SCHEDULER_AUTONOMOUS_INTERVAL_MIN,
     SCHEDULER_BRIEFING_HOUR,
     SCHEDULER_GMAIL_INTERVAL_MIN,
+    SCHEDULER_HEALTH_CHECK_MIN,
     SCHEDULER_PROCESS_INTERVAL_MIN,
+    SCHEDULER_WEEKLY_BRIEFING_DAY,
     VAULT_PATH,
 )
 from logger import iso_now, log_to_vault, setup_console_logger
@@ -230,6 +236,59 @@ def job_daily_briefing() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Job: Health check (Gold)
+# ---------------------------------------------------------------------------
+
+def job_health_check() -> None:
+    """Run process watchdog health check."""
+    try:
+        from process_watcher import ProcessWatchdog
+
+        watchdog = ProcessWatchdog()
+        report = watchdog.check_health()
+        healthy = sum(1 for v in report.values() if v.get("status") == "healthy")
+        logger.info("Health check: %d/%d components healthy", healthy, len(report))
+    except Exception as exc:
+        logger.error("Health check failed: %s", exc)
+        log_to_vault("scheduled_health_check", "scheduler", "error", detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Job: Autonomous loop (Gold)
+# ---------------------------------------------------------------------------
+
+def job_autonomous_loop() -> None:
+    """Run the autonomous task execution loop."""
+    try:
+        from autonomous_loop import run_autonomous_loop
+
+        result = run_autonomous_loop()
+        logger.info(
+            "Autonomous loop: %d processed, %d errors",
+            result.get("processed", 0), result.get("errors", 0),
+        )
+    except Exception as exc:
+        logger.error("Autonomous loop failed: %s", exc)
+        log_to_vault("scheduled_autonomous_loop", "scheduler", "error", detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Job: Weekly briefing (Gold)
+# ---------------------------------------------------------------------------
+
+def job_weekly_briefing() -> None:
+    """Generate a weekly CEO briefing."""
+    try:
+        from briefing_generator import generate_weekly_briefing
+
+        path = generate_weekly_briefing()
+        logger.info("Weekly briefing generated: %s", path)
+    except Exception as exc:
+        logger.error("Weekly briefing failed: %s", exc)
+        log_to_vault("scheduled_weekly_briefing", "scheduler", "error", detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
 # Scheduler setup
 # ---------------------------------------------------------------------------
 
@@ -263,6 +322,32 @@ def create_scheduler() -> BackgroundScheduler:
         CronTrigger(hour=SCHEDULER_BRIEFING_HOUR, minute=0),
         id="daily_briefing",
         name=f"Daily briefing (at {SCHEDULER_BRIEFING_HOUR}:00)",
+    )
+
+    # Gold tier jobs (5-7)
+    scheduler.add_job(
+        job_health_check,
+        IntervalTrigger(minutes=SCHEDULER_HEALTH_CHECK_MIN),
+        id="health_check",
+        name=f"Health check (every {SCHEDULER_HEALTH_CHECK_MIN} min)",
+    )
+
+    scheduler.add_job(
+        job_autonomous_loop,
+        IntervalTrigger(minutes=SCHEDULER_AUTONOMOUS_INTERVAL_MIN),
+        id="autonomous_loop",
+        name=f"Autonomous loop (every {SCHEDULER_AUTONOMOUS_INTERVAL_MIN} min)",
+    )
+
+    # Map day names to cron day_of_week
+    day_map = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
+    weekly_day = day_map.get(SCHEDULER_WEEKLY_BRIEFING_DAY.lower(), 0)
+
+    scheduler.add_job(
+        job_weekly_briefing,
+        CronTrigger(day_of_week=weekly_day, hour=9, minute=0),
+        id="weekly_briefing",
+        name=f"Weekly briefing ({SCHEDULER_WEEKLY_BRIEFING_DAY} 9:00)",
     )
 
     return scheduler
