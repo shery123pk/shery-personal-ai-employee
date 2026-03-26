@@ -1,0 +1,22 @@
+[Unit]
+Description=AI Employee Cloud Agent
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-employee
+Group=ai-employee
+WorkingDirectory=/opt/ai-employee
+Environment=WORK_ZONE=cloud
+Environment=DEV_MODE=false
+Environment=CLOUD_HEALTH_PORT=8080
+EnvironmentFile=/opt/ai-employee/.env
+ExecStart=/opt/ai-employee/venv/bin/python scripts/cloud_entrypoint.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

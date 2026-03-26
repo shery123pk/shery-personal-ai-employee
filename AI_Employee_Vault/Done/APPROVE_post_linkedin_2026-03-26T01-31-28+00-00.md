@@ -1,7 +1,7 @@
 # Approval Request: Test LinkedIn rejection
 
 - **action_type:** post_linkedin
-- **requested_at:** 2026-03-02T10:10:20+00:00
+- **requested_at:** 2026-03-26T01:31:28+00:00
 - **status:** rejected
 
 ## Details
@@ -22,4 +22,4 @@
 - `Approved/` — to execute the action
 - `Rejected/` — to deny the action
 
-- **rejected_at:** 2026-03-02T10:10:20+00:00
+- **rejected_at:** 2026-03-26T01:31:28+00:00

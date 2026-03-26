@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  ai-employee:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: ai-employee-cloud
+    ports:
+      - "8080:8080"
+    environment:
+      - WORK_ZONE=cloud
+      - DEV_MODE=${DEV_MODE:-true}
+      - VAULT_PATH=AI_Employee_Vault
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GMAIL_CREDENTIALS_FILE=credentials.json
+      - GMAIL_TOKEN_FILE=token.json
+      - ODOO_URL=http://odoo:8069
+      - ODOO_DB=odoo
+      - ODOO_USERNAME=admin
+      - ODOO_PASSWORD=odoo
+    volumes:
+      - ../AI_Employee_Vault:/app/AI_Employee_Vault
+    depends_on:
+      odoo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  odoo:
+    image: odoo:17.0
+    container_name: ai-employee-odoo
+    ports:
+      - "8069:8069"
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo
+    volumes:
+      - odoo-data:/var/lib/odoo
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8069/web/database/selector"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    container_name: ai-employee-db
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  odoo-data:
+  pgdata:

@@ -22,7 +22,7 @@ from watchdog.observers import Observer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from config import APPROVED_DIR, DONE_DIR, REJECTED_DIR
+from config import APPROVED_DIR, DOMAINS, DONE_DIR, PENDING_APPROVAL_DIR, REJECTED_DIR
 from file_watcher import BaseWatcher
 from logger import iso_now, log_to_vault, setup_console_logger
 
@@ -131,13 +131,27 @@ class ApprovalWatcher(BaseWatcher):
     # -- approval handling ---------------------------------------------------
 
     def _scan_existing(self) -> None:
-        """Process files already in Approved/ or Rejected/ at startup."""
+        """Process files already in Approved/, Rejected/, and Pending_Approval subdirs."""
         for item in APPROVED_DIR.iterdir():
             if item.is_file() and not item.name.startswith("."):
                 self._handle_approved(item)
         for item in REJECTED_DIR.iterdir():
             if item.is_file() and not item.name.startswith("."):
                 self._handle_rejected(item)
+
+        # Scan domain subdirectories in Pending_Approval/
+        for domain in DOMAINS:
+            domain_dir = PENDING_APPROVAL_DIR / domain
+            if not domain_dir.exists():
+                continue
+            for item in domain_dir.iterdir():
+                if item.is_file() and not item.name.startswith("."):
+                    log_to_vault(
+                        action="pending_approval_found",
+                        source=item.name,
+                        result="pending",
+                        domain=domain,
+                    )
 
     def _handle_approved(self, file_path: Path) -> None:
         """Process an approved action file."""

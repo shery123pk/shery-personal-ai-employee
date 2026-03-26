@@ -1,0 +1,15 @@
+# Secrets
+.env
+*.key
+*.pem
+
+# Obsidian internals
+.obsidian/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Allow structured data
+!Logs/*.json
+!*.md

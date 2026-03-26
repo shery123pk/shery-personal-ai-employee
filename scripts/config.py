@@ -120,3 +120,48 @@ SCHEDULER_WEEKLY_BRIEFING_DAY = os.getenv("SCHEDULER_WEEKLY_BRIEFING_DAY", "mon"
 # ---------------------------------------------------------------------------
 
 DEV_MODE = os.getenv("DEV_MODE", "true").lower() in ("true", "1", "yes")
+
+# ---------------------------------------------------------------------------
+# Platinum tier vault paths
+# ---------------------------------------------------------------------------
+
+IN_PROGRESS_DIR = VAULT_PATH / "In_Progress"
+UPDATES_DIR = VAULT_PATH / "Updates"
+
+DOMAINS = ["email", "social", "finance", "general"]
+
+# ---------------------------------------------------------------------------
+# Work-zone settings (Platinum tier)
+# ---------------------------------------------------------------------------
+
+WORK_ZONE = os.getenv("WORK_ZONE", "local")  # "cloud" or "local"
+
+# ---------------------------------------------------------------------------
+# Vault sync settings (Platinum tier)
+# ---------------------------------------------------------------------------
+
+VAULT_SYNC_BRANCH = os.getenv("VAULT_SYNC_BRANCH", "main")
+VAULT_SYNC_INTERVAL_SEC = int(os.getenv("VAULT_SYNC_INTERVAL_SEC", "300"))
+
+# ---------------------------------------------------------------------------
+# Odoo ERP settings (Platinum tier)
+# ---------------------------------------------------------------------------
+
+ODOO_URL = os.getenv("ODOO_URL", "http://localhost:8069")
+ODOO_DB = os.getenv("ODOO_DB", "odoo")
+ODOO_USERNAME = os.getenv("ODOO_USERNAME", "admin")
+ODOO_PASSWORD = os.getenv("ODOO_PASSWORD", "admin")
+ODOO_DEV_MODE = os.getenv("ODOO_DEV_MODE", "true").lower() in ("true", "1", "yes")
+
+# ---------------------------------------------------------------------------
+# Cloud health (Platinum tier)
+# ---------------------------------------------------------------------------
+
+CLOUD_HEALTH_PORT = int(os.getenv("CLOUD_HEALTH_PORT", "8080"))
+
+# ---------------------------------------------------------------------------
+# Scheduler Platinum additions
+# ---------------------------------------------------------------------------
+
+SCHEDULER_VAULT_SYNC_INTERVAL_MIN = int(os.getenv("SCHEDULER_VAULT_SYNC_INTERVAL_MIN", "5"))
+SCHEDULER_DASHBOARD_MERGE_INTERVAL_MIN = int(os.getenv("SCHEDULER_DASHBOARD_MERGE_INTERVAL_MIN", "10"))

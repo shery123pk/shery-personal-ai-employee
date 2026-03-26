@@ -20,6 +20,7 @@ def create_approval_request(
     action_type: str,
     summary: str,
     details: dict | None = None,
+    domain: str = "",
 ) -> Path:
     """Create an approval request file in Pending_Approval/.
 
@@ -27,16 +28,21 @@ def create_approval_request(
         action_type: Type of action (e.g. "send_email", "post_linkedin").
         summary: Human-readable one-line summary.
         details: Additional metadata to include.
+        domain: Optional domain subdirectory (e.g. "email", "social").
 
     Returns:
         Path to the created approval file.
     """
-    PENDING_APPROVAL_DIR.mkdir(parents=True, exist_ok=True)
+    if domain:
+        target_dir = PENDING_APPROVAL_DIR / domain
+    else:
+        target_dir = PENDING_APPROVAL_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = iso_now()
     slug = action_type.replace(" ", "_").lower()
     filename = f"APPROVE_{slug}_{timestamp.replace(':', '-')}.md"
-    filepath = PENDING_APPROVAL_DIR / filename
+    filepath = target_dir / filename
 
     details = details or {}
     details_block = "\n".join(f"- **{k}:** {v}" for k, v in details.items())

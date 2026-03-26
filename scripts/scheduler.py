@@ -1,6 +1,6 @@
 """Scheduler — APScheduler-based periodic jobs for the AI Employee.
 
-Runs seven periodic tasks (4 Silver + 3 Gold):
+Runs nine periodic tasks (4 Silver + 3 Gold + 2 Platinum):
 1. Check Gmail every N minutes
 2. Process Needs_Action queue every N minutes
 3. Check Approved folder every N minutes
@@ -8,6 +8,8 @@ Runs seven periodic tasks (4 Silver + 3 Gold):
 5. Health check every N minutes (Gold)
 6. Autonomous loop every N minutes (Gold)
 7. Weekly briefing on configured day (Gold)
+8. Vault sync every N minutes (Platinum)
+9. Dashboard merge every N minutes (Platinum — Local only)
 
 Usage:
     python scripts/scheduler.py
@@ -36,11 +38,14 @@ from config import (
     SCHEDULER_APPROVAL_INTERVAL_MIN,
     SCHEDULER_AUTONOMOUS_INTERVAL_MIN,
     SCHEDULER_BRIEFING_HOUR,
+    SCHEDULER_DASHBOARD_MERGE_INTERVAL_MIN,
     SCHEDULER_GMAIL_INTERVAL_MIN,
     SCHEDULER_HEALTH_CHECK_MIN,
     SCHEDULER_PROCESS_INTERVAL_MIN,
+    SCHEDULER_VAULT_SYNC_INTERVAL_MIN,
     SCHEDULER_WEEKLY_BRIEFING_DAY,
     VAULT_PATH,
+    WORK_ZONE,
 )
 from logger import iso_now, log_to_vault, setup_console_logger
 
@@ -289,6 +294,46 @@ def job_weekly_briefing() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Job: Vault sync (Platinum)
+# ---------------------------------------------------------------------------
+
+def job_vault_sync() -> None:
+    """Synchronise the vault via git (pull → commit → push)."""
+    try:
+        from vault_sync import VaultSync
+
+        syncer = VaultSync()
+        result = syncer.sync()
+        logger.info(
+            "Vault sync: pulled=%d, pushed=%d, conflicts=%d",
+            result["pulled"], result["pushed"], len(result["conflicts"]),
+        )
+    except Exception as exc:
+        logger.error("Vault sync failed: %s", exc)
+        log_to_vault("scheduled_vault_sync", "scheduler", "error", detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Job: Dashboard merge (Platinum — Local only)
+# ---------------------------------------------------------------------------
+
+def job_merge_dashboard() -> None:
+    """Merge Cloud update signals into Dashboard.md (Local zone only)."""
+    if WORK_ZONE != "local":
+        return
+    try:
+        from dashboard_updater import DashboardUpdater
+
+        updater = DashboardUpdater()
+        count = updater.merge_updates_to_dashboard()
+        if count:
+            logger.info("Dashboard merge: %d update(s) merged", count)
+    except Exception as exc:
+        logger.error("Dashboard merge failed: %s", exc)
+        log_to_vault("scheduled_dashboard_merge", "scheduler", "error", detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
 # Scheduler setup
 # ---------------------------------------------------------------------------
 
@@ -348,6 +393,21 @@ def create_scheduler() -> BackgroundScheduler:
         CronTrigger(day_of_week=weekly_day, hour=9, minute=0),
         id="weekly_briefing",
         name=f"Weekly briefing ({SCHEDULER_WEEKLY_BRIEFING_DAY} 9:00)",
+    )
+
+    # Platinum tier jobs (8-9)
+    scheduler.add_job(
+        job_vault_sync,
+        IntervalTrigger(minutes=SCHEDULER_VAULT_SYNC_INTERVAL_MIN),
+        id="vault_sync",
+        name=f"Vault sync (every {SCHEDULER_VAULT_SYNC_INTERVAL_MIN} min)",
+    )
+
+    scheduler.add_job(
+        job_merge_dashboard,
+        IntervalTrigger(minutes=SCHEDULER_DASHBOARD_MERGE_INTERVAL_MIN),
+        id="merge_dashboard",
+        name=f"Dashboard merge (every {SCHEDULER_DASHBOARD_MERGE_INTERVAL_MIN} min)",
     )
 
     return scheduler

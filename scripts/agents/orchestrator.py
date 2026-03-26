@@ -15,15 +15,20 @@ from agents.email_agent import EmailAgent
 from agents.meeting_agent import MeetingAgent
 from agents.research_agent import ResearchAgent
 from agents.task_optimizer import TaskOptimizer
+from claim_manager import ClaimManager
 from config import (
     AUTONOMOUS_MAX_ITERATIONS,
     AUTONOMOUS_RETRY_LIMIT,
     BRIEFINGS_DIR,
     DONE_DIR,
+    DOMAINS,
     NEEDS_ACTION_DIR,
+    PENDING_APPROVAL_DIR,
     PLANS_DIR,
+    WORK_ZONE,
 )
 from logger import iso_now, log_to_vault, setup_console_logger
+from work_zone import WorkZoneRouter
 
 logger = setup_console_logger("orchestrator")
 
@@ -45,6 +50,13 @@ class OrchestratorAgent(BaseAgent):
             "meeting": MeetingAgent(),
             "task_optimizer": TaskOptimizer(),
         }
+        self.router = WorkZoneRouter(WORK_ZONE)
+        self.claimer = ClaimManager("orchestrator")
+
+        # Register CloudAgent when running in cloud zone
+        if WORK_ZONE == "cloud":
+            from agents.cloud_agent import CloudAgent
+            self.agents["cloud"] = CloudAgent()
 
     def execute(self, task: dict) -> dict:
         """Route a single task to the appropriate agent.
@@ -121,18 +133,38 @@ class OrchestratorAgent(BaseAgent):
         # Use prioritized order if available, otherwise process as-is
         task_order = [t["file"] for t in prioritized] if prioritized else [t["file"] for t in pending]
 
-        # Step 3: Process each task
+        # Step 3: Process each task with claim-by-move
         for i, filename in enumerate(task_order[:max_iters]):
             filepath = NEEDS_ACTION_DIR / filename
             if not filepath.exists():
+                # Also check domain subdirectories
+                for domain in DOMAINS:
+                    alt = NEEDS_ACTION_DIR / domain / filename
+                    if alt.exists():
+                        filepath = alt
+                        break
+                else:
+                    continue
+
+            # Claim the file atomically
+            claimed = self.claimer.try_claim(filepath)
+            if not claimed:
                 continue
 
             # Write current task indicator
             self._write_current_task(filename, i + 1, len(task_order))
 
             try:
-                content = filepath.read_text(encoding="utf-8")
+                content = claimed.read_text(encoding="utf-8")
                 task_type = self.classify_task_type(content)
+
+                # Check zone routing — delegate if not ours
+                zone = self.router.route_task({"domain": task_type})
+                if zone != "either" and zone != self.router.zone:
+                    self._delegate_to_other_zone(claimed, task_type)
+                    processed += 1
+                    results.append({"file": filename, "agent": "delegated", "status": "delegated"})
+                    continue
 
                 # Execute with retry
                 result = self._execute_with_retry(task_type, {
@@ -141,14 +173,13 @@ class OrchestratorAgent(BaseAgent):
                     "subject": filename,
                 })
 
-                # Archive to Done
+                # Update content and release to Done
                 updated = content.replace("**status:** pending", "**status:** completed")
                 updated += f"\n- **completed_at:** {iso_now()}\n"
                 updated += f"\n- **processed_by:** {task_type}_agent\n"
+                claimed.write_text(updated, encoding="utf-8")
 
-                DONE_DIR.mkdir(parents=True, exist_ok=True)
-                (DONE_DIR / filename).write_text(updated, encoding="utf-8")
-                filepath.unlink()
+                self.claimer.release_to_done(claimed)
 
                 processed += 1
                 results.append({"file": filename, "agent": task_type, "status": "success"})
@@ -254,10 +285,12 @@ class OrchestratorAgent(BaseAgent):
         raise RuntimeError(f"Agent {task_type} failed after {AUTONOMOUS_RETRY_LIMIT} retries: {last_error}")
 
     def _read_pending_tasks(self) -> list[dict]:
-        """Read all tasks from Needs_Action/."""
+        """Read all tasks from Needs_Action/ and its domain subdirectories."""
         tasks = []
         if not NEEDS_ACTION_DIR.exists():
             return tasks
+
+        # Scan root
         for item in sorted(NEEDS_ACTION_DIR.iterdir()):
             if item.is_file() and not item.name.startswith("."):
                 try:
@@ -265,7 +298,27 @@ class OrchestratorAgent(BaseAgent):
                     tasks.append({"file": item.name, "content": content[:1000]})
                 except OSError:
                     continue
+
+        # Scan domain subdirectories
+        for domain in DOMAINS:
+            domain_dir = NEEDS_ACTION_DIR / domain
+            if not domain_dir.exists():
+                continue
+            for item in sorted(domain_dir.iterdir()):
+                if item.is_file() and not item.name.startswith("."):
+                    try:
+                        content = item.read_text(encoding="utf-8")
+                        tasks.append({"file": item.name, "content": content[:1000], "domain": domain})
+                    except OSError:
+                        continue
+
         return tasks
+
+    def _delegate_to_other_zone(self, claimed_path: Path, task_type: str) -> None:
+        """Delegate a task to the other work zone via Pending_Approval."""
+        domain = task_type if task_type in DOMAINS else "general"
+        self.claimer.release_to_approval(claimed_path, domain)
+        self.log_action("delegate_zone", "delegated", task_type=task_type, domain=domain)
 
     def _write_current_task(self, filename: str, index: int, total: int) -> None:
         """Write a CURRENT_TASK.md indicator in Plans/."""

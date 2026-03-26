@@ -1,4 +1,4 @@
-"""End-to-end test: Gold tier full pipeline with 22 checks (14 Silver + 8 Gold)."""
+"""End-to-end test: Platinum tier full pipeline (32+ Checks)."""
 
 import json
 import shutil
@@ -21,7 +21,7 @@ REJECTED_DIR = VAULT_DIR / "Rejected"
 
 def main() -> None:
     print("=" * 60)
-    print("END-TO-END TEST: Gold Tier Full Pipeline (22 Checks)")
+    print("END-TO-END TEST: Platinum Tier Full Pipeline (32+ Checks)")
     print("=" * 60)
 
     # ── Step 1: Start watcher ──
@@ -226,10 +226,11 @@ def main() -> None:
     watcher.stop()
 
     # ── Gold Step 11: Test AI agents ──
-    print("\n[11/14] Testing Gold tier AI agents...")
+    print("\n[11/14] Testing Gold+Platinum tier AI agents...")
     base_agent_importable = False
     agent_count = 0
     orchestrator_works = False
+    cloud_agent_importable = False
     try:
         from agents.base_agent import BaseAgent
         base_agent_importable = True
@@ -240,8 +241,11 @@ def main() -> None:
         from agents.meeting_agent import MeetingAgent
         from agents.task_optimizer import TaskOptimizer
         from agents.orchestrator import OrchestratorAgent
-        agent_count = 5
+        from agents.cloud_agent import CloudAgent
+        agent_count = 6
+        cloud_agent_importable = issubclass(CloudAgent, BaseAgent)
         print(f"        {agent_count} agent classes imported.")
+        print(f"        CloudAgent extends BaseAgent: {cloud_agent_importable}")
 
         # Test orchestrator routing
         orchestrator = OrchestratorAgent()
@@ -283,9 +287,107 @@ def main() -> None:
     for af in sorted(agent_files):
         print(f"          - {af.name}")
 
-    # ── Final verification — 22 checks ──
+    # ── Platinum Step 15: Test claim-by-move ──
+    print("\n[15/20] Testing claim-by-move (ClaimManager)...")
+    claim_works = False
+    try:
+        from claim_manager import ClaimManager
+
+        claimer = ClaimManager("test_agent")
+        # Create a test task in Needs_Action
+        test_task = NEEDS_ACTION_DIR / "CLAIM_TEST_task.md"
+        test_task.write_text("# Test\n- **status:** pending\n", encoding="utf-8")
+
+        # Claim it
+        claimed = claimer.try_claim(test_task)
+        if claimed and claimed.exists() and not test_task.exists():
+            print(f"        Claimed: {claimed}")
+            # Release to Done
+            released = claimer.release_to_done(claimed)
+            if released and released.exists():
+                claim_works = True
+                print(f"        Released to Done: {released.name}")
+                released.unlink()  # clean up
+        else:
+            print("        Claim failed!")
+    except Exception as exc:
+        print(f"        ClaimManager error: {exc}")
+
+    # ── Platinum Step 16: Test work-zone routing ──
+    print("\n[16/20] Testing work-zone routing...")
+    routing_works = False
+    try:
+        from work_zone import WorkZoneRouter, CLOUD_DOMAINS, LOCAL_DOMAINS
+
+        cloud_router = WorkZoneRouter("cloud")
+        local_router = WorkZoneRouter("local")
+        routing_works = (
+            cloud_router.can_handle("email_triage")
+            and not cloud_router.can_handle("send_email")
+            and local_router.can_handle("approval")
+            and not local_router.can_handle("research")
+        )
+        print(f"        Cloud can email_triage: {cloud_router.can_handle('email_triage')}")
+        print(f"        Cloud can send_email: {cloud_router.can_handle('send_email')}")
+        print(f"        Local can approval: {local_router.can_handle('approval')}")
+        print(f"        Routing correct: {routing_works}")
+    except Exception as exc:
+        print(f"        WorkZoneRouter error: {exc}")
+
+    # ── Platinum Step 17: Test vault sync module ──
+    print("\n[17/20] Testing vault sync module (DEV_MODE)...")
+    vault_sync_works = False
+    try:
+        from vault_sync import VaultSync
+
+        syncer = VaultSync()
+        result = syncer.sync()
+        vault_sync_works = isinstance(result, dict) and "pulled" in result
+        print(f"        Sync result: {result}")
+    except Exception as exc:
+        print(f"        VaultSync error: {exc}")
+
+    # ── Platinum Step 18: Test Odoo MCP server import ──
+    print("\n[18/20] Testing Odoo MCP server import...")
+    odoo_mcp_works = False
+    try:
+        from mcp_odoo_server import create_invoice, list_invoices, get_account_balance
+        inv_result = json.loads(create_invoice("Test Corp", 1000.00, "Test invoice"))
+        odoo_mcp_works = inv_result.get("status") == "created"
+        print(f"        create_invoice result: {inv_result.get('status')}")
+    except Exception as exc:
+        print(f"        Odoo MCP error: {exc}")
+
+    # ── Platinum Step 19: Test CloudAgent ──
+    print("\n[19/20] Testing CloudAgent...")
+    cloud_agent_works = False
+    try:
+        from agents.cloud_agent import CloudAgent
+        from agents.base_agent import BaseAgent as BA
+        cloud_agent_works = issubclass(CloudAgent, BA)
+        print(f"        CloudAgent extends BaseAgent: {cloud_agent_works}")
+    except Exception as exc:
+        print(f"        CloudAgent error: {exc}")
+
+    # ── Platinum Step 20: Test dashboard updater ──
+    print("\n[20/20] Testing dashboard updater...")
+    dashboard_updater_works = False
+    try:
+        from dashboard_updater import DashboardUpdater
+
+        updater = DashboardUpdater()
+        update_path = updater.write_update("test_source", {"test_key": "test_value"})
+        if update_path.exists():
+            print(f"        Update written: {update_path.name}")
+            # Clean up the update file (don't merge — we're in test)
+            update_path.unlink()
+            dashboard_updater_works = True
+    except Exception as exc:
+        print(f"        DashboardUpdater error: {exc}")
+
+    # ── Final verification — 32+ checks ──
     print("\n" + "=" * 60)
-    print("VERIFICATION — Gold Tier (22 Checks)")
+    print("VERIFICATION — Platinum Tier (32+ Checks)")
     print("=" * 60)
 
     done_files = sorted(f.name for f in DONE_DIR.iterdir() if not f.name.startswith("."))
@@ -304,6 +406,14 @@ def main() -> None:
     knowledge_base_dir = VAULT_DIR / "Knowledge_Base"
     finance_dir = VAULT_DIR / "Finance"
 
+    # Platinum vault folders
+    in_progress_dir = VAULT_DIR / "In_Progress"
+    updates_dir = VAULT_DIR / "Updates"
+
+    # Agent file count
+    agents_dir_count = len([f for f in (Path(__file__).resolve().parent / "agents").iterdir()
+                           if f.suffix == ".py" and f.name != "__init__.py"]) if (Path(__file__).resolve().parent / "agents").exists() else 0
+
     checks = [
         # Bronze checks (1-6)
         ("3 files in Inbox", inbox_count == 3),
@@ -317,19 +427,32 @@ def main() -> None:
         ("Approval workflow works", any("approval" in e["action"] for e in log_entries)),
         ("LinkedIn dry-run works", any("linkedin" in e["action"] for e in log_entries)),
         ("Config module loads", CFG_VAULT.exists()),
-        ("Scheduler has 7 jobs", len(jobs) == 7),
+        ("Scheduler has 9 jobs", len(jobs) >= 9),
         ("MCP server script exists", len(mcp_scripts) >= 1),
         ("8+ agent skills", skill_count >= 8),
         ("Silver vault folders exist", PLANS_DIR.exists() and PENDING_APPROVAL_DIR.exists() and APPROVED_DIR.exists() and REJECTED_DIR.exists()),
         # Gold checks (15-22)
         ("5+ watcher scripts exist", len(watcher_scripts) >= 5),
         ("BaseAgent class importable", base_agent_importable),
-        ("5 agent classes exist", agent_count >= 5),
-        ("4 MCP server scripts exist", len(mcp_scripts) >= 4),
+        ("5+ agent classes exist", agent_count >= 5),
+        ("4+ MCP server scripts exist", len(mcp_scripts) >= 4),
         ("Orchestrator routes tasks", orchestrator_works),
         ("Briefing generates", briefing_path_exists),
-        ("Scheduler has 7 jobs", len(jobs) == 7),
+        ("Scheduler has 9 jobs", len(jobs) >= 9),
         ("13+ agent skills exist", skill_count >= 13),
+        # Platinum checks (23-32+)
+        ("In_Progress/ folder exists", in_progress_dir.exists()),
+        ("Updates/ folder exists", updates_dir.exists()),
+        ("ClaimManager works", claim_works),
+        ("WorkZoneRouter routes correctly", routing_works),
+        ("VaultSync importable", vault_sync_works),
+        ("6+ watcher scripts exist", len(watcher_scripts) >= 6),
+        ("5+ MCP server scripts exist", len(mcp_scripts) >= 5),
+        ("CloudAgent extends BaseAgent", cloud_agent_works),
+        ("DashboardUpdater works", dashboard_updater_works),
+        ("6+ agent classes exist", agents_dir_count >= 6),
+        ("18+ agent skills exist", skill_count >= 18),
+        ("Scheduler has 9+ jobs", len(jobs) >= 9),
     ]
 
     all_pass = True
@@ -341,7 +464,7 @@ def main() -> None:
 
     print()
     if all_pass:
-        print(f"ALL {len(checks)} CHECKS PASSED — Gold Tier Complete!")
+        print(f"ALL {len(checks)} CHECKS PASSED — Platinum Tier Complete!")
     else:
         failed = sum(1 for _, p in checks if not p)
         print(f"{len(checks) - failed}/{len(checks)} CHECKS PASSED — {failed} FAILED")

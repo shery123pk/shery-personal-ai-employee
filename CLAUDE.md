@@ -1,70 +1,86 @@
-# Gold Tier AI Employee — Sharmeen Asif
+# Platinum Tier AI Employee — Sharmeen Asif
 
 > **Hackathon:** GIAIC / Panaversity Personal AI Employee Hackathon 0
 > **Owner:** Sharmeen Asif (@shery123pk)
-> **Tier:** Gold — Full Autonomous Employee (5 AI Agents + 5 Watchers + 4 MCP + Autonomous Loop)
+> **Tier:** Platinum — Distributed Cloud+Local Employee (6 AI Agents + 6 Watchers + 5 MCP + 9 Scheduler Jobs + Cloud Deployment)
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                     Claude Code (Orchestrator)               │
-│  Skills (13): vault · watcher · processing · approval ·     │
-│    linkedin · planning · scheduling · email · research ·     │
-│    meeting-prep · task-optimization · orchestration ·        │
-│    email-intelligence                                        │
-└──┬────────┬────────┬────────┬────────┬──────────────────────┘
-   │        │        │        │        │
-┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──────────────────────┐
-│File │ │Gmail│ │Appr.│ │Proc.│ │Finance  │  4 MCP Servers │
-│Watch│ │Watch│ │Watch│ │Watch│ │Watcher  │  Email·Calendar│
-│(dog)│ │(API)│ │(dog)│ │(dog)│ │(CSV)    │  Task·Social   │
-└──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬─────┘────────────────┘
-   │       │       │       │       │
-   └───────┴───────▼───────┴───────┘
-             Obsidian Vault
-   ┌────────────────────────────────┐
-   │  Inbox/  Needs_Action/  Done/  │
-   │  Plans/  Pending_Approval/     │
-   │  Approved/  Rejected/  Logs/   │
-   │  Briefings/  Knowledge_Base/   │
-   │  Finance/  Dashboard.md        │
-   └────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     Claude Code (Orchestrator)                    │
+│  Skills (18): vault · watcher · processing · approval ·          │
+│    linkedin · planning · scheduling · email · research ·          │
+│    meeting-prep · task-optimization · orchestration ·              │
+│    email-intelligence · cloud-deployment · vault-sync ·            │
+│    work-zone-routing · odoo-integration · claim-management         │
+└──┬────────┬────────┬────────┬────────┬────────┬─────────────────┘
+   │        │        │        │        │        │
+┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼──┐ ┌──▼─────────────────┐
+│File │ │Gmail│ │Appr.│ │Proc.│ │Fin. │ │Sync   │ 5 MCP Servers│
+│Watch│ │Watch│ │Watch│ │Watch│ │Watch│ │Watch  │ Email·Calendar│
+│(dog)│ │(API)│ │(dog)│ │(dog)│ │(CSV)│ │(git)  │ Task·Social  │
+└──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬───┘ Odoo         │
+   │       │       │       │       │       │    └───────────────┘
+   └───────┴───────┴───────▼───────┴───────┘
+                   Obsidian Vault
+   ┌─────────────────────────────────────────┐
+   │  Inbox/  Needs_Action/{domain}/  Done/  │
+   │  Plans/{domain}/  Pending_Approval/{d}/ │
+   │  Approved/  Rejected/  Logs/            │
+   │  Briefings/  Knowledge_Base/            │
+   │  Finance/  In_Progress/{agent}/         │
+   │  Updates/  Dashboard.md                 │
+   └─────────────────────────────────────────┘
 
-   ┌────────────────────────────────┐
-   │         5 AI Agents            │
-   │  Email · Research · Meeting    │
-   │  TaskOptimizer · Orchestrator  │
-   │  (OpenAI gpt-4o-mini)         │
-   └────────────────────────────────┘
+   ┌─────────────────────────────────────────┐
+   │            6 AI Agents                   │
+   │  Email · Research · Meeting · Cloud      │
+   │  TaskOptimizer · Orchestrator            │
+   │  (OpenAI gpt-4o-mini)                   │
+   └─────────────────────────────────────────┘
+
+   ┌─────────────────────────────────────────┐
+   │         Work-Zone Router                 │
+   │  Cloud: triage, draft, research          │
+   │  Local: approval, send, post, pay        │
+   │  Claim-by-move concurrency               │
+   └─────────────────────────────────────────┘
 ```
 
 **Data Flow:**
 - **File:** Drop in `Inbox/` → Watcher → `Needs_Action/` → Agent processes → `Done/`
 - **Email:** Gmail poll → `Needs_Action/` → EmailAgent analyses → Plan → Process → `Done/`
 - **Sensitive:** Action → `Pending_Approval/` → Human → `Approved/`/`Rejected/` → Execute/Log → `Done/`
-- **Autonomous:** Orchestrator scans `Needs_Action/` → TaskOptimizer prioritises → Route to agent → `Done/`
+- **Autonomous:** Orchestrator scans `Needs_Action/` → Claim-by-move → TaskOptimizer prioritises → Route to agent → `Done/`
 - **Finance:** CSV in `Finance/` → FinanceWatcher parses → Anomalies → `Needs_Action/`
+- **Cloud→Local:** CloudAgent drafts → `Pending_Approval/<domain>/` → Local approves → Execute → `Done/`
+- **Vault Sync:** Git pull → commit local → push (Dashboard.md: Local wins; rest: Cloud wins)
+- **Dashboard Merge:** Cloud writes `Updates/` → Local merges into `Dashboard.md` (single-writer)
 
 ## Vault Structure
 
 | Folder | Purpose |
 |--------|---------|
 | `AI_Employee_Vault/Inbox/` | File watcher monitors this directory |
-| `AI_Employee_Vault/Needs_Action/` | Action items pending processing |
+| `AI_Employee_Vault/Needs_Action/` | Action items pending processing (+ domain subdirs) |
+| `AI_Employee_Vault/Needs_Action/{email,social,finance,general}/` | Domain-specific action queues (Platinum) |
 | `AI_Employee_Vault/Done/` | Completed items archive |
-| `AI_Employee_Vault/Plans/` | Structured execution plans + Eisenhower Matrix |
-| `AI_Employee_Vault/Pending_Approval/` | Sensitive actions awaiting human review |
+| `AI_Employee_Vault/Plans/` | Structured execution plans + Eisenhower Matrix (+ domain subdirs) |
+| `AI_Employee_Vault/Pending_Approval/` | Sensitive actions awaiting human review (+ domain subdirs) |
+| `AI_Employee_Vault/Pending_Approval/{email,social,finance,general}/` | Domain-specific approval queues (Platinum) |
 | `AI_Employee_Vault/Approved/` | Human-approved actions |
 | `AI_Employee_Vault/Rejected/` | Human-rejected actions |
 | `AI_Employee_Vault/Logs/` | Daily JSON logs + LLM usage tracking |
 | `AI_Employee_Vault/Briefings/` | Daily + weekly intelligence briefings (Gold) |
 | `AI_Employee_Vault/Knowledge_Base/` | Research summaries (Gold) |
 | `AI_Employee_Vault/Finance/` | CSV transaction monitoring (Gold) |
-| `AI_Employee_Vault/Dashboard.md` | Real-time status overview |
+| `AI_Employee_Vault/In_Progress/{agent}/` | Claim-by-move concurrency per agent (Platinum) |
+| `AI_Employee_Vault/Updates/` | Cloud→Local dashboard update signals (Platinum) |
+| `AI_Employee_Vault/Dashboard.md` | Real-time status overview (single-writer merge) |
 | `AI_Employee_Vault/Company_Handbook.md` | Operational rules & policies |
 
-## AI Agents (5 total — Gold)
+## AI Agents (6 total — Platinum)
 
 | Agent | Module | Purpose |
 |-------|--------|---------|
@@ -72,11 +88,12 @@
 | **ResearchAgent** | `agents/research_agent.py` | Deep research, summarisation, Knowledge Base building |
 | **MeetingAgent** | `agents/meeting_agent.py` | Agenda preparation, action item extraction |
 | **TaskOptimizer** | `agents/task_optimizer.py` | Eisenhower Matrix prioritisation |
-| **OrchestratorAgent** | `agents/orchestrator.py` | Agent coordination, autonomous loop, briefings |
+| **OrchestratorAgent** | `agents/orchestrator.py` | Agent coordination, autonomous loop, briefings, zone-aware routing |
+| **CloudAgent** | `agents/cloud_agent.py` | Cloud-zone email triage, social drafts (Platinum) |
 
 All agents extend `BaseAgent` (`agents/base_agent.py`) and use OpenAI gpt-4o-mini via `agents/llm_gateway.py`.
 
-## Agent Skills (13 total)
+## Agent Skills (18 total)
 
 ### Bronze Tier
 1. **vault-management** — Read/write vault files, list directories, move files, update Dashboard
@@ -87,7 +104,7 @@ All agents extend `BaseAgent` (`agents/base_agent.py`) and use OpenAI gpt-4o-min
 4. **approval-management** — Human-in-the-loop approval for sensitive actions (email, LinkedIn, delete)
 5. **linkedin-posting** — Generate professional content and post to LinkedIn via approval workflow
 6. **planning** — Analyse action items and create structured execution plans with reasoning
-7. **scheduling** — Manage APScheduler periodic jobs (7 jobs total)
+7. **scheduling** — Manage APScheduler periodic jobs (9 jobs total)
 8. **email-management** — Search, read, send, draft emails via FastMCP server (4 tools)
 
 ### Gold Tier
@@ -97,7 +114,14 @@ All agents extend `BaseAgent` (`agents/base_agent.py`) and use OpenAI gpt-4o-min
 12. **task-optimization** — Eisenhower Matrix prioritisation and workload balancing
 13. **orchestration** — Autonomous agent coordination and task execution loop
 
-## MCP Servers (4 total)
+### Platinum Tier
+14. **cloud-deployment** — Deploy & manage Cloud VM (Dockerfile, docker-compose, systemd)
+15. **vault-sync** — Git-based vault synchronisation between Cloud and Local zones
+16. **work-zone-routing** — Cloud/Local domain ownership and task routing
+17. **odoo-integration** — Odoo ERP invoicing and payments via MCP server (6 tools)
+18. **claim-management** — Claim-by-move atomic concurrency for multi-agent processing
+
+## MCP Servers (5 total)
 
 ### Email Server
 Register: `claude mcp add email-server -- python scripts/mcp_email_server.py`
@@ -138,6 +162,18 @@ Register: `claude mcp add social-server -- python scripts/mcp_social_server.py`
 | `post_twitter` | Post to Twitter/X | Yes |
 | `schedule_post` | Schedule future post | Yes |
 
+### Odoo Server (Platinum)
+Register: `claude mcp add odoo-server -- python scripts/mcp_odoo_server.py`
+
+| Tool | Description | Requires Approval |
+|------|-------------|-------------------|
+| `create_invoice` | Create customer invoice | No |
+| `list_invoices` | List invoices with filters | No |
+| `post_invoice` | Post/confirm invoice | Yes |
+| `create_payment` | Register payment | No |
+| `confirm_payment` | Confirm payment | Yes |
+| `get_account_balance` | Account balance summary | No |
+
 ## Code Standards
 
 - Python 3.13+
@@ -147,6 +183,8 @@ Register: `claude mcp add social-server -- python scripts/mcp_social_server.py`
 - No hardcoded secrets — use `.env`
 - Sensitive actions require human approval
 - All watchers extend `BaseWatcher` abstract class
+- All agents extend `BaseAgent` abstract class
+- Claim-by-move for concurrent task processing
 
 ---
 

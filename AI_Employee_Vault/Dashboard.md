@@ -1,6 +1,6 @@
 # AI Employee Dashboard
 
-> Last updated: 2026-03-02T10:10:20+00:00
+> Last updated: 2026-03-26T01:31:28+00:00
 
 ## System Health
 
@@ -19,24 +19,24 @@
 | Folder | Count |
 |--------|-------|
 | Inbox | 3 |
-| Needs_Action | 0 |
+| Needs_Action | 4 |
 | Done | 5 |
-| Plans | 0 |
-| Pending_Approval | 0 |
+| Plans | 4 |
+| Pending_Approval | 4 |
 
 ## Recent Activity
 
 | Timestamp | Action | Source | Result |
 |-----------|--------|--------|--------|
-| 2026-03-02T10:10:05+00:00 | watcher_started | file_watcher | success |
-| 2026-03-02T10:10:05+00:00 | file_detected | URGENT_budget_report.txt | action_created |
-| 2026-03-02T10:10:07+00:00 | file_detected | REVIEW_meeting_notes.md | action_created |
-| 2026-03-02T10:10:09+00:00 | file_detected | FYI_newsletter_update.txt | action_created |
-| 2026-03-02T10:10:11+00:00 | processed | FILE_FYI_newsletter_update.txt.md | completed |
-| 2026-03-02T10:10:11+00:00 | processed | FILE_REVIEW_meeting_notes.md.md | completed |
-| 2026-03-02T10:10:11+00:00 | processed | FILE_URGENT_budget_report.txt.md | completed |
-| 2026-03-02T10:10:11+00:00 | approval_requested | send_email | pending |
-| 2026-03-02T10:10:20+00:00 | approval_executed | APPROVE_send_email_2026-03-02T10-10-11+00-00.md | success |
-| 2026-03-02T10:10:20+00:00 | approval_requested | post_linkedin | pending |
-| 2026-03-02T10:10:20+00:00 | approval_rejected | APPROVE_post_linkedin_2026-03-02T10-10-20+00-00.md | rejected |
-| 2026-03-02T10:10:20+00:00 | linkedin_post_dry_run | linkedin_poster | dry_run |
+| 2026-03-26T01:31:11+00:00 | watcher_started | file_watcher | success |
+| 2026-03-26T01:31:11+00:00 | file_detected | URGENT_budget_report.txt | action_created |
+| 2026-03-26T01:31:13+00:00 | file_detected | REVIEW_meeting_notes.md | action_created |
+| 2026-03-26T01:31:14+00:00 | file_detected | FYI_newsletter_update.txt | action_created |
+| 2026-03-26T01:31:17+00:00 | processed | FILE_FYI_newsletter_update.txt.md | completed |
+| 2026-03-26T01:31:17+00:00 | processed | FILE_REVIEW_meeting_notes.md.md | completed |
+| 2026-03-26T01:31:17+00:00 | processed | FILE_URGENT_budget_report.txt.md | completed |
+| 2026-03-26T01:31:17+00:00 | approval_requested | send_email | pending |
+| 2026-03-26T01:31:28+00:00 | approval_executed | APPROVE_send_email_2026-03-26T01-31-17+00-00.md | success |
+| 2026-03-26T01:31:28+00:00 | approval_requested | post_linkedin | pending |
+| 2026-03-26T01:31:28+00:00 | approval_rejected | APPROVE_post_linkedin_2026-03-26T01-31-28+00-00.md | rejected |
+| 2026-03-26T01:31:28+00:00 | linkedin_post_dry_run | linkedin_poster | dry_run |
