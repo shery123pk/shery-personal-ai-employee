@@ -164,11 +164,11 @@ def main() -> None:
 
     # ── Step 9: Update Dashboard ──
     print("[9/10] Updating Dashboard.md...")
-    inbox_count = len([f for f in INBOX_DIR.iterdir() if not f.name.startswith(".")])
-    needs_count = len([f for f in NEEDS_ACTION_DIR.iterdir() if not f.name.startswith(".")])
-    done_count = len([f for f in DONE_DIR.iterdir() if not f.name.startswith(".")])
-    plans_count = len([f for f in PLANS_DIR.iterdir() if not f.name.startswith(".")])
-    pending_count = len([f for f in PENDING_APPROVAL_DIR.iterdir() if not f.name.startswith(".")])
+    inbox_count = len([f for f in INBOX_DIR.iterdir() if f.is_file() and not f.name.startswith(".")])
+    needs_count = len([f for f in NEEDS_ACTION_DIR.iterdir() if f.is_file() and not f.name.startswith(".")])
+    done_count = len([f for f in DONE_DIR.iterdir() if f.is_file() and not f.name.startswith(".")])
+    plans_count = len([f for f in PLANS_DIR.iterdir() if f.is_file() and not f.name.startswith(".")])
+    pending_count = len([f for f in PENDING_APPROVAL_DIR.iterdir() if f.is_file() and not f.name.startswith(".")])
 
     log_path = get_today_log_path()
     entries = json.loads(log_path.read_text(encoding="utf-8"))
